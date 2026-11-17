@@ -1,0 +1,11 @@
+name: jebectug
+
+description: JeBec Tug
+version: 1.0.0
+
+edition: 3 
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  sqlite3: ^3.8.0
