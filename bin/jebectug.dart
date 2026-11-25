@@ -2,6 +2,12 @@ import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart';
 
+// =============================================================
+//  jebectug.dart - APLIKASI DINING ASRAMA UNAI (Deposito + Tap Kartu + SQLite)
+//  Konsep : Inheritance, Encapsulation, Polymorphism, Error Handling
+//  SOLID  : SRP, OCP, LSP, ISP, DIP
+//  Pattern: Singleton, Factory, Strategy, Repository, Unit of Work
+// =============================================================
 
 String rupiah(int n) {
   final s = n
@@ -11,7 +17,9 @@ String rupiah(int n) {
   return '${n < 0 ? '-' : ''}Rp$s';
 }
 
-
+// -------------------------------------------------------------
+// 1. ERROR HANDLING: custom exception
+// -------------------------------------------------------------
 class DiningException implements Exception {
   final String pesan;
   DiningException(this.pesan);
@@ -39,7 +47,10 @@ class OpsiMakanTidakValidException extends DiningException {
       : super('Opsi makan "$jenis" tidak dikenal (pilih dine in / take away).');
 }
 
-
+// -------------------------------------------------------------
+// 2. INHERITANCE + ENCAPSULATION
+//    Pengguna (abstract) -> Mahasiswa
+// -------------------------------------------------------------
 abstract class Pengguna {
   final int _id; // private
   final String _nama; // private
@@ -79,7 +90,9 @@ class Mahasiswa extends Pengguna {
   }
 }
 
-
+// -------------------------------------------------------------
+// 3. POLIMORFISME + STRATEGY PATTERN (opsi makan)
+// -------------------------------------------------------------
 abstract class OpsiMakan {
   String get nama;
   int get biayaDasar => 15000;
@@ -104,7 +117,9 @@ class TakeAway extends OpsiMakan {
   int hitungBiaya() => biayaDasar + biayaKemasan;
 }
 
-
+// -------------------------------------------------------------
+// 4. FACTORY PATTERN
+// -------------------------------------------------------------
 class OpsiMakanFactory {
   static OpsiMakan buat(String jenis) {
     switch (jenis.toLowerCase().trim()) {
@@ -120,6 +135,9 @@ class OpsiMakanFactory {
   }
 }
 
+// -------------------------------------------------------------
+// 5. MODEL TRANSAKSI (data satu baris riwayat)
+// -------------------------------------------------------------
 class Transaksi {
   final int idKartu;
   final String jenis; // MAKAN / GAGAL / TOPUP
@@ -134,7 +152,9 @@ class Transaksi {
       '[$waktu] ${jenis.padRight(5)} ${keterangan.padRight(22)} ${rupiah(nominal)}';
 }
 
-
+// -------------------------------------------------------------
+// 6. ABSTRAKSI (ISP + DIP): service hanya tahu interface ini
+// -------------------------------------------------------------
 abstract class MahasiswaRepository {
   void tambahJikaBelum(Mahasiswa m);
   void perbarui(Mahasiswa m);
@@ -160,13 +180,15 @@ class PembayaranDeposito implements MetodePembayaran {
   void bayar(Mahasiswa mhs, int jumlah) => mhs.potongDeposito(jumlah);
 }
 
-
+// -------------------------------------------------------------
+// 7. SQLITE: SINGLETON PATTERN + UNIT OF WORK (transaksi database)
+// -------------------------------------------------------------
 class DatabaseHelper implements UnitOfWork {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static const String namaFile = 'jebegtug.dart';
+  static const String namaFile = 'dining_unai.db';
   Database? _db;
 
   Database get db => _db ??= _buka();
@@ -195,7 +217,7 @@ class DatabaseHelper implements UnitOfWork {
     return d;
   }
 
-  
+  /// Semua perubahan di dalam [aksi] berhasil semua atau dibatalkan semua.
   @override
   T jalankan<T>(T Function() aksi) {
     db.execute('BEGIN');
@@ -276,7 +298,7 @@ class SqliteRiwayatRepository implements RiwayatRepository {
     );
   }
 
-  
+  /// Riwayat HANYA untuk satu akun (WHERE id_kartu = ?).
   @override
   List<Transaksi> ambilPerAkun(int idKartu) {
     final hasil = _helper.db.select(
@@ -292,7 +314,10 @@ class SqliteRiwayatRepository implements RiwayatRepository {
   }
 }
 
-
+// -------------------------------------------------------------
+// 8. SERVICE (SRP: alur makan, isi deposito, riwayat)
+//    DIP: hanya bergantung pada abstraksi
+// -------------------------------------------------------------
 class DiningService {
   final MahasiswaRepository _mhsRepo;
   final RiwayatRepository _riwayatRepo;
@@ -339,7 +364,9 @@ class DiningService {
   List<Mahasiswa> daftar() => _mhsRepo.semua();
 }
 
-
+// -------------------------------------------------------------
+// 9. DATA AWAL
+// -------------------------------------------------------------
 void isiDataAwal(MahasiswaRepository repo) {
   final data = [
     Mahasiswa(111, 'Rebecca', depositoAwal: 50000),
@@ -354,7 +381,9 @@ void isiDataAwal(MahasiswaRepository repo) {
   }
 }
 
-
+// -------------------------------------------------------------
+// 10. MAIN: LOOPING simulasi + LOOPING menu interaktif
+// -------------------------------------------------------------
 void main() {
   final helper = DatabaseHelper();
   final mhsRepo = SqliteMahasiswaRepository(helper);
@@ -458,7 +487,7 @@ void _tampilDaftar(DiningService service) {
   }
 }
 
-
+// LOOPING: semua mahasiswa tap kartu dine in lalu take away
 void _simulasi(DiningService service) {
   for (final jenis in ['dine in', 'take away']) {
     print('\n--- Ronde: $jenis ---');
