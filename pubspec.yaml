@@ -1,11 +1,9 @@
-name: jebectug
-
-description: JeBec Tug
+name: dining_asrama_unai
+description: Aplikasi dining asrama UNAI dengan deposito dan SQLite.
 version: 1.0.0
 
-edition: 3 
-
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: ^3.0.0
+
 dependencies:
-  sqlite3: ^3.8.0
+  sqlite3: ^2.4.0
